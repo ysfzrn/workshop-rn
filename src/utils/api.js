@@ -18,7 +18,8 @@ export default function makeRequest(path, body) {
 
     url=`${url}?ts=${ts}&apikey=${PUBLIC_KEY}&hash=${hash}`;
 
-    console.log('yusuf',url);
+    //console.log('yusuf',url);
+    //console.log('yusuf',body);
 
 
     axios

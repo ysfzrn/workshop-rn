@@ -7,30 +7,36 @@ import {
   Image,
   ActivityIndicator,
   FlatList,
-  StatusBar,
+  StatusBar
 } from "react-native";
 import api from "../utils/api";
 import CharacterCard from "../components/characterCard";
 import SearchHeader from "../components/searchHeader";
 
-
 const homeIcon = require("../assets/home.png");
+let scrollToEnable = false;
 // create a component
 class Home extends Component {
-  static navigationOptions = {
-    tabBarLabel: "Home",
-    tabBarOnPress: (tab, jumpToIndex) => {
-      console.log(this.flatListRef);
-      console.log(tab);
-      console.log(jumpToIndex);
-      //this.flatListRef.scrollToIndex({animated: true, index: 0});
-    },
-    tabBarIcon: ({ tintColor }) => (
-      <Image
-        source={homeIcon}
-        style={[styles.icon, { tintColor: tintColor }]}
-      />
-    )
+  static navigationOptions = ({ navigation }) => {
+    return {
+      tabBarOnPress: (tab, jumpToIndex) => {
+        if (scrollToEnable) {
+          tab.route.params.handleScrollToTop();
+        }
+        scrollToEnable = true;
+        navigation.navigate("Home");
+      },
+      tabBarIcon: ({ tintColor }) => (
+        <Image
+          source={homeIcon}
+          style={[styles.icon, { tintColor: tintColor }]}
+        />
+      )
+    };
+  };
+
+  _handleScrollToTop = () => {
+    this.flatListRef.scrollToIndex({ animated: true, index: 0 });
   };
 
   constructor(props) {
@@ -41,55 +47,91 @@ class Home extends Component {
       error: null,
       endLoading: false,
       offset: 0,
+      filterName: null
     };
   }
 
   componentDidMount() {
-    this.getCharacters();
+    const { navigation } = this.props;
+    navigation.setParams({ handleScrollToTop: this._handleScrollToTop });
+    this.getCharacters(0);
   }
 
   getCharacters = () => {
-    const { offset } = this.state;
-    api("characters", { limit: 10, offset:offset })
+    api("characters", {
+      limit: 10,
+      offset: this.state.offset,
+      orderBy: "-modified",
+      nameStartsWith: this.state.filterName
+    })
       .then(res => {
         this.setState({
-          characters: [ ...this.state.characters, ...res.results],
+          characters: this.state.offset === 0
+            ? res.results
+            : [...this.state.characters, ...res.results],
           loading: false,
-          endLoading: false,
+          endLoading: false
         });
       })
       .catch(err => {
         console.log(err);
-        this.setState({ error: err, loading: false, endLoading: false, });
+        this.setState({ error: err, loading: false, endLoading: false });
       });
   };
-
 
   getMoreData = () => {
     const { offset } = this.state;
-    if(!this.state.endLoading){
-     this.setState({ endLoading: true, offset: this.state.offset + 10 }, () => {
-        setTimeout(() => {
-          this.getCharacters();
-        }, 1500);
-      });
+    if (!this.state.endLoading) {
+      this.setState(
+        { endLoading: true, offset: this.state.offset + 10 },
+        () => {
+          setTimeout(() => {
+            this.getCharacters();
+          }, 1500);
+        }
+      );
     }
   };
 
-  renderHeader = () => {
-    return <SearchHeader />;
+  handleToDetail = character => {
+    const { navigation } = this.props;
+    navigation.navigate("Detail", { character: character });
   };
 
+  handleSearch = name => {
+    this.setState(
+      {
+        characters: [],
+        loading: true,
+        error: null,
+        endLoading: false,
+        offset: 0,
+        filterName: name ? name : null
+      },
+      () => {
+        this.getCharacters();
+      }
+    );
+  };
+
+  renderHeader = () => {
+    return <SearchHeader searchPress={this.handleSearch} />;
+  };
 
   renderCharacters = () => {
     const { characters } = this.state;
-    console.log("yusuf", characters);
-    console.log("offset", this.state.offset);
     return (
       <FlatList
         data={characters}
-        ref={(ref) => { this.flatListRef = ref; }}
-        renderItem={({ item }) => <CharacterCard character={item} />}
+        ref={ref => {
+          this.flatListRef = ref;
+        }}
+        renderItem={({ item }) => (
+          <CharacterCard
+            character={item}
+            characterPress={this.handleToDetail}
+          />
+        )}
         ListHeaderComponent={this.renderHeader}
         ListFooterComponent={this.renderFooter}
         keyExtractor={item => item.id}
@@ -118,15 +160,12 @@ class Home extends Component {
 
   render() {
     const { loading, characters } = this.state;
-    console.log(characters.length);
     return (
       <View style={styles.container}>
         <StatusBar barStyle="light-content" />
-        {loading ? (
-          <ActivityIndicator animating size="large" />
-        ) : (
-          this.renderCharacters()
-        )}
+        {loading
+          ? <ActivityIndicator animating size="large" />
+          : this.renderCharacters()}
       </View>
     );
   }

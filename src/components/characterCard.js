@@ -1,18 +1,18 @@
 //import liraries
 import React, { Component } from 'react';
-import { View, Text, StyleSheet, Dimensions, Image } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Image, TouchableOpacity } from 'react-native';
 
 const { width, height } = Dimensions.get('screen');
 
 // create a component
 class CharacterCard extends Component {
     render() {
-        const { character } = this.props;
+        const { character, characterPress } = this.props;
         return (
-            <View style={styles.container}>
+            <TouchableOpacity style={styles.container} onPress={()=>characterPress(character)} > 
                 <Image style={styles.image} source={{uri: `${character.thumbnail.path}.${character.thumbnail.extension}` }}/>
                 <Text style={styles.text}>{character.name} </Text>
-            </View>
+            </TouchableOpacity>
         );
     }
 }
