@@ -47,14 +47,15 @@ class Home extends Component {
       error: null,
       endLoading: false,
       offset: 0,
-      filterName: null
+      filterName: null,
+      refreshing:false
     };
   }
 
   componentDidMount() {
     const { navigation } = this.props;
     navigation.setParams({ handleScrollToTop: this._handleScrollToTop });
-    this.getCharacters(0);
+    this.getCharacters();
   }
 
   getCharacters = () => {
@@ -66,16 +67,18 @@ class Home extends Component {
     })
       .then(res => {
         this.setState({
-          characters: this.state.offset === 0
-            ? res.results
-            : [...this.state.characters, ...res.results],
+          characters:
+            this.state.offset === 0
+              ? res.results
+              : [...this.state.characters, ...res.results],
           loading: false,
-          endLoading: false
+          endLoading: false,
+          refreshing:false
         });
       })
       .catch(err => {
         console.log(err);
-        this.setState({ error: err, loading: false, endLoading: false });
+        this.setState({ error: err, loading: false, endLoading: false, refreshing:false });
       });
   };
 
@@ -83,7 +86,7 @@ class Home extends Component {
     const { offset } = this.state;
     if (!this.state.endLoading) {
       this.setState(
-        { endLoading: true, offset: this.state.offset + 10 },
+        { endLoading: true, offset: this.state.offset + 10, refreshing:false },
         () => {
           setTimeout(() => {
             this.getCharacters();
@@ -114,12 +117,29 @@ class Home extends Component {
     );
   };
 
+  handleRefresh = () => {
+    this.setState(
+      {
+        refreshing: true,
+        characters: [],
+        loading: true,
+        error: null,
+        endLoading: false,
+        offset: 0,
+        filterName: null
+      },
+      () => {
+        this.getCharacters();
+      }
+    );
+  };
+
   renderHeader = () => {
     return <SearchHeader searchPress={this.handleSearch} />;
   };
 
   renderCharacters = () => {
-    const { characters } = this.state;
+    const { characters,endLoading, refreshing } = this.state;
     return (
       <FlatList
         data={characters}
@@ -136,7 +156,8 @@ class Home extends Component {
         ListFooterComponent={this.renderFooter}
         keyExtractor={item => item.id}
         onEndReached={this.getMoreData}
-        refreshing={false}
+        refreshing={refreshing}
+        onRefresh={this.handleRefresh}
         onEndReachedThreshold={100}
       />
     );
@@ -163,9 +184,11 @@ class Home extends Component {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="light-content" />
-        {loading
-          ? <ActivityIndicator animating size="large" />
-          : this.renderCharacters()}
+        {loading ? (
+          <ActivityIndicator animating size="large" />
+        ) : (
+          this.renderCharacters()
+        )}
       </View>
     );
   }

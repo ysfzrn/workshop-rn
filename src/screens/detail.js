@@ -73,9 +73,16 @@ class Detail extends Component {
       outputRange: [1, 0],
       extrapolate: "clamp"
     })
+    
+    const widthInterpolate = this.state.animatedValue.interpolate({
+      inputRange: [0, 300],
+      outputRange: [width, 0],
+      extrapolate: "clamp"
+    })
 
     const imageStyle = {
       height: collapseInterpolate,
+      width:widthInterpolate,
       opacity: opacityInterpolate
     }
     return (
@@ -87,7 +94,7 @@ class Detail extends Component {
         ])}
       >
         <View style={styles.profile}>
-          <View>
+          <View style={{alignItems:'center'}} >
             <Animated.Image
               resizeMode="cover"
               style={[styles.image,imageStyle]}
@@ -115,7 +122,8 @@ const styles = StyleSheet.create({
   },
   profile: {},
   comicContainer: {
-    padding: 10
+    padding: 10,
+    alignItems:'center'
   },
   comics: {
     flex: 1,
@@ -123,10 +131,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-around",
     flexWrap: "wrap"
-  },
-  image: {
-    width,
-    
   },
   description: {
     color: "white",
